@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Sidebar } from "./components/Sidebar";
 import { Navbar } from "./components/Navbar";
 import { DashboardView } from "./components/DashboardView";
 import { EmployeeModule } from "./components/EmployeeModule";
@@ -122,9 +123,9 @@ function App() {
   };
 
   return (
-    <div className="app-container">
-      {/* Top Navigation */}
-      <Navbar
+    <div className="app-layout">
+      {/* Left Sidebar Navigation */}
+      <Sidebar
         activeTab={activeTab}
         setActiveTab={(t) => {
           setNavParams({});
@@ -132,33 +133,55 @@ function App() {
         }}
         currentUser={currentUser}
         currentRole={currentRole}
-        onSwitchRole={handleSwitchRole}
-        onReseed={handleReseed}
-        reseedLoading={reseedLoading}
         onOpenAuth={() => setIsAuthOpen(true)}
         onSignOut={handleSignOut}
       />
 
+      {/* Main Content Area with Sticky Topbar */}
+      <div className="app-main-wrapper">
+        <Navbar
+          activeTab={activeTab}
+          currentUser={currentUser}
+          onOpenAuth={() => setIsAuthOpen(true)}
+          onSignOut={handleSignOut}
+        />
+
       {/* Toast Notification */}
       {notification && (
         <div
+          className="animate-fade-in"
           style={{
             position: "fixed",
-            bottom: 24,
-            right: 24,
-            background: "#0f172a",
+            bottom: 28,
+            right: 28,
+            background: "rgba(15, 23, 42, 0.94)",
+            backdropFilter: "blur(8px)",
             color: "white",
-            padding: "12px 20px",
-            borderRadius: 10,
-            boxShadow: "0 10px 25px rgba(0,0,0,0.2)",
+            padding: "14px 22px",
+            borderRadius: "var(--radius-lg)",
+            boxShadow: "var(--shadow-xl)",
             display: "flex",
             alignItems: "center",
-            gap: 10,
+            gap: 12,
             zIndex: 9999,
-            fontSize: 13.5
+            fontSize: 13.5,
+            fontWeight: 600,
+            border: "1px solid rgba(255, 255, 255, 0.12)"
           }}
         >
-          <CheckCircle size={16} color="#10b981" />
+          <div
+            style={{
+              width: 24,
+              height: 24,
+              borderRadius: "50%",
+              background: "rgba(16, 185, 129, 0.2)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center"
+            }}
+          >
+            <CheckCircle size={15} color="#10b981" />
+          </div>
           <span>{notification}</span>
         </div>
       )}
@@ -172,7 +195,12 @@ function App() {
 
       {/* Main Content Area */}
       <main className="main-content">
-        {activeTab === "dashboard" && <DashboardView />}
+        {activeTab === "dashboard" && (
+          <DashboardView
+            onNavigateToModule={handleNavigateToModule}
+            currentUser={currentUser}
+          />
+        )}
 
         {activeTab === "employees" && (
           <EmployeeModule
@@ -211,10 +239,41 @@ function App() {
           />
         )}
 
-        {activeTab === "schedules" && (
+        {activeTab === "payslips" && (
+          <PayrollModule
+            initialEmployeeId={navParams.employeeId}
+            initialSubtab="payslips"
+            currentRole={currentRole}
+          />
+        )}
+
+        {(activeTab === "schedules" || activeTab === "reports") && (
           <WorkingScheduleModule currentRole={currentRole} />
         )}
       </main>
+
+      {/* Floating AI Workforce Assistant Button (as seen in reference design) */}
+      <button
+        className="floating-ai-assistant-btn"
+        onClick={() => {
+          setNotification("PeoplePay360 AI Assistant: Ready to summarize payroll and workforce metrics.");
+          setTimeout(() => setNotification(""), 4000);
+        }}
+        title="PeoplePay360 AI Workforce Assistant"
+      >
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2L14.4 7.6L20 10L14.4 12.4L12 18L9.6 12.4L4 10L9.6 7.6L12 2Z" fill="url(#aiGrad)" />
+          <path d="M19 16L20.2 18.8L23 20L20.2 21.2L19 24L17.8 21.2L15 20L17.8 18.8L19 16Z" fill="#a855f7" />
+          <defs>
+            <linearGradient id="aiGrad" x1="4" y1="2" x2="20" y2="18" gradientUnits="userSpaceOnUse">
+              <stop stopColor="#3b82f6" />
+              <stop offset="0.5" stopColor="#8b5cf6" />
+              <stop offset="1" stopColor="#ec4899" />
+            </linearGradient>
+          </defs>
+        </svg>
+      </button>
+      </div>
     </div>
   );
 }

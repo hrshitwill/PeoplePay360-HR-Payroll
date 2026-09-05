@@ -33,6 +33,20 @@ const handleResponse = async (res) => {
   return data;
 };
 
+/**
+ * Sanitizes query parameters and produces a clean query string
+ */
+const buildQuery = (params = {}) => {
+  const clean = {};
+  for (const [k, v] of Object.entries(params)) {
+    if (v !== undefined && v !== null && v !== "" && v !== "undefined" && v !== "null") {
+      clean[k] = v;
+    }
+  }
+  const qs = new URLSearchParams(clean).toString();
+  return qs ? `?${qs}` : "";
+};
+
 export const api = {
   // Token management
   getToken,
@@ -77,20 +91,16 @@ export const api = {
     }).then(handleResponse),
 
   // Dashboard
-  getDashboardMetrics: (params = {}) => {
-    const qs = new URLSearchParams(params).toString();
-    return fetch(`${API_BASE}/dashboard?${qs}`, {
+  getDashboardMetrics: (params = {}) =>
+    fetch(`${API_BASE}/dashboard${buildQuery(params)}`, {
       headers: authHeaders()
-    }).then(handleResponse);
-  },
+    }).then(handleResponse),
 
   // Employees
-  getEmployees: (params = {}) => {
-    const qs = new URLSearchParams(params).toString();
-    return fetch(`${API_BASE}/employees?${qs}`, {
+  getEmployees: (params = {}) =>
+    fetch(`${API_BASE}/employees${buildQuery(params)}`, {
       headers: authHeaders()
-    }).then(handleResponse);
-  },
+    }).then(handleResponse),
   getEmployeeById: (id) =>
     fetch(`${API_BASE}/employees/${id}`, {
       headers: authHeaders()
@@ -114,12 +124,10 @@ export const api = {
     }).then(handleResponse),
 
   // Contracts
-  getContracts: (params = {}) => {
-    const qs = new URLSearchParams(params).toString();
-    return fetch(`${API_BASE}/contracts?${qs}`, {
+  getContracts: (params = {}) =>
+    fetch(`${API_BASE}/contracts${buildQuery(params)}`, {
       headers: authHeaders()
-    }).then(handleResponse);
-  },
+    }).then(handleResponse),
   getContractById: (id) =>
     fetch(`${API_BASE}/contracts/${id}`, {
       headers: authHeaders()
@@ -165,12 +173,10 @@ export const api = {
     }).then(handleResponse),
 
   // Attendance
-  getAttendance: (params = {}) => {
-    const qs = new URLSearchParams(params).toString();
-    return fetch(`${API_BASE}/attendance?${qs}`, {
+  getAttendance: (params = {}) =>
+    fetch(`${API_BASE}/attendance${buildQuery(params)}`, {
       headers: authHeaders()
-    }).then(handleResponse);
-  },
+    }).then(handleResponse),
   getAttendanceStats: () =>
     fetch(`${API_BASE}/attendance/stats`, {
       headers: authHeaders()
@@ -211,12 +217,10 @@ export const api = {
       headers: authHeaders(),
       body: JSON.stringify(payload)
     }).then(handleResponse),
-  getAllocations: (params = {}) => {
-    const qs = new URLSearchParams(params).toString();
-    return fetch(`${API_BASE}/timeoff/allocations?${qs}`, {
+  getAllocations: (params = {}) =>
+    fetch(`${API_BASE}/timeoff/allocations${buildQuery(params)}`, {
       headers: authHeaders()
-    }).then(handleResponse);
-  },
+    }).then(handleResponse),
   createAllocation: (payload) =>
     fetch(`${API_BASE}/timeoff/allocations`, {
       method: "POST",
@@ -234,12 +238,10 @@ export const api = {
       method: "PUT",
       headers: authHeaders()
     }).then(handleResponse),
-  getLeaveRequests: (params = {}) => {
-    const qs = new URLSearchParams(params).toString();
-    return fetch(`${API_BASE}/timeoff/requests?${qs}`, {
+  getLeaveRequests: (params = {}) =>
+    fetch(`${API_BASE}/timeoff/requests${buildQuery(params)}`, {
       headers: authHeaders()
-    }).then(handleResponse);
-  },
+    }).then(handleResponse),
   createLeaveRequest: (payload) =>
     fetch(`${API_BASE}/timeoff/requests`, {
       method: "POST",
@@ -302,12 +304,10 @@ export const api = {
     }).then(handleResponse),
 
   // Payruns & Wizard
-  getEligibleEmployees: (params = {}) => {
-    const qs = new URLSearchParams(params).toString();
-    return fetch(`${API_BASE}/payruns/eligible-employees?${qs}`, {
+  getEligibleEmployees: (params = {}) =>
+    fetch(`${API_BASE}/payruns/eligible-employees${buildQuery(params)}`, {
       headers: authHeaders()
-    }).then(handleResponse);
-  },
+    }).then(handleResponse),
   getPayruns: () =>
     fetch(`${API_BASE}/payruns`, {
       headers: authHeaders()
@@ -350,12 +350,10 @@ export const api = {
     }).then(handleResponse),
 
   // Payslips
-  getPayslips: (params = {}) => {
-    const qs = new URLSearchParams(params).toString();
-    return fetch(`${API_BASE}/payslips?${qs}`, {
+  getPayslips: (params = {}) =>
+    fetch(`${API_BASE}/payslips${buildQuery(params)}`, {
       headers: authHeaders()
-    }).then(handleResponse);
-  },
+    }).then(handleResponse),
   getPayslipById: (id) =>
     fetch(`${API_BASE}/payslips/${id}`, {
       headers: authHeaders()

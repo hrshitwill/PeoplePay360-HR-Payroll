@@ -48,8 +48,8 @@ const getAllAllocations = async (req, res) => {
     try {
         const { employeeId, status } = req.query;
         const query = {};
-        if (employeeId) query.employee = employeeId;
-        if (status) query.status = status;
+        if (employeeId && employeeId !== "undefined" && employeeId !== "null") query.employee = employeeId;
+        if (status && status !== "undefined" && status !== "null") query.status = status;
 
         const allocations = await TimeOffAllocation.find(query)
             .populate("employee", "firstName lastName employeeId department email")
@@ -110,8 +110,8 @@ const getAllRequests = async (req, res) => {
     try {
         const { employeeId, status } = req.query;
         const query = {};
-        if (employeeId) query.employee = employeeId;
-        if (status) query.status = status;
+        if (employeeId && employeeId !== "undefined" && employeeId !== "null") query.employee = employeeId;
+        if (status && status !== "undefined" && status !== "null") query.status = status;
 
         const requests = await TimeOffRequest.find(query)
             .populate("employee", "firstName lastName employeeId department email avatar")

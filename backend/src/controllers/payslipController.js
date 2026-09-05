@@ -6,9 +6,9 @@ const getAllPayslips = async (req, res) => {
         const { employeeId, payrunId, status } = req.query;
         const query = {};
 
-        if (employeeId) query.employee = employeeId;
-        if (payrunId) query.payrun = payrunId;
-        if (status) query.status = status;
+        if (employeeId && employeeId !== "undefined" && employeeId !== "null") query.employee = employeeId;
+        if (payrunId && payrunId !== "undefined" && payrunId !== "null") query.payrun = payrunId;
+        if (status && status !== "undefined" && status !== "null") query.status = status;
 
         const payslips = await Payslip.find(query)
             .populate("employee", "firstName lastName employeeId department jobTitle email avatar bankDetails")
