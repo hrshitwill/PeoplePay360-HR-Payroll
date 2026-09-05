@@ -102,21 +102,12 @@ function App() {
 
   if (!currentUser) {
     return (
-      <div style={{
-        minHeight: "100vh",
-        background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 24
-      }}>
-        <AuthModal
-          isOpen={true}
-          forceOpen={true}
-          onClose={() => {}}
-          onAuthSuccess={handleAuthSuccess}
-        />
-      </div>
+      <AuthModal
+        isOpen={true}
+        forceOpen={true}
+        onClose={() => {}}
+        onAuthSuccess={handleAuthSuccess}
+      />
     );
   }
 

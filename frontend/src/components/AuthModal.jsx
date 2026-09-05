@@ -18,6 +18,8 @@ export const AuthModal = ({ isOpen, onClose, onAuthSuccess, forceOpen = false })
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [forgotType, setForgotType] = useState("");
 
   if (!isOpen) return null;
 
@@ -46,7 +48,7 @@ export const AuthModal = ({ isOpen, onClose, onAuthSuccess, forceOpen = false })
         setTimeout(() => {
           onAuthSuccess(res.user, res.token);
           if (onClose) onClose();
-        }, 500);
+        }, 400);
       }
     } catch (err) {
       setError(err.message || "Authentication failed. Please check your credentials.");
@@ -104,24 +106,25 @@ export const AuthModal = ({ isOpen, onClose, onAuthSuccess, forceOpen = false })
       <div className="modal-content" style={{ maxWidth: 520, borderRadius: 16, overflow: "hidden", border: "1px solid #e2e8f0" }}>
         {/* Header */}
         <div style={{
-          background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)",
-          color: "white",
-          padding: "24px 28px",
+          padding: "32px 48px",
           display: "flex",
+          flexDirection: "column",
           justifyContent: "space-between",
-          alignItems: "center",
-          borderBottom: "1px solid rgba(255, 255, 255, 0.08)"
+          overflowY: "auto",
+          maxHeight: "100vh"
         }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          {/* Top Logo */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{
-              width: 44,
-              height: 44,
-              borderRadius: 12,
-              background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)",
+              width: 36,
+              height: 36,
+              borderRadius: 10,
+              background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              boxShadow: "0 4px 12px rgba(59, 130, 246, 0.4)"
+              color: "#ffffff",
+              boxShadow: "0 4px 10px rgba(37, 99, 235, 0.3)"
             }}>
               {authMode === "register" ? (
                 <UserPlus size={22} color="white" />
@@ -145,28 +148,10 @@ export const AuthModal = ({ isOpen, onClose, onAuthSuccess, forceOpen = false })
                 {authMode === "reset" && "Enter reset PIN code and set your new password"}
               </p>
             </div>
+            <span style={{ fontSize: 22, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.02em" }}>
+              People<span style={{ color: "#2563eb" }}>Pay360</span>
+            </span>
           </div>
-          {!forceOpen && onClose && (
-            <button
-              style={{
-                border: "none",
-                background: "rgba(255, 255, 255, 0.1)",
-                color: "#94a3b8",
-                width: 32,
-                height: 32,
-                borderRadius: 8,
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 16
-              }}
-              onClick={onClose}
-            >
-              ✕
-            </button>
-          )}
-        </div>
 
         {/* Tab switch for Sign In vs Register */}
         {(authMode === "login" || authMode === "register") && (
@@ -234,28 +219,77 @@ export const AuthModal = ({ isOpen, onClose, onAuthSuccess, forceOpen = false })
               alignItems: "center",
               gap: 10
             }}>
-              <AlertCircle size={18} color="#dc2626" style={{ flexShrink: 0 }} />
-              <div>{error}</div>
-            </div>
-          )}
+              {isRegister ? "Fill in your details to get started with PeoplePay360." : "Enter your email and password to access your account."}
+            </p>
 
-          {successMsg && (
-            <div style={{
-              padding: "12px 16px",
-              background: "#ecfdf5",
-              border: "1px solid #a7f3d0",
-              borderRadius: 10,
-              color: "#065f46",
-              fontSize: 13,
-              marginBottom: 18,
-              display: "flex",
-              alignItems: "center",
-              gap: 10
-            }}>
-              <CheckCircle size={18} color="#059669" style={{ flexShrink: 0 }} />
-              <div>{successMsg}</div>
-            </div>
-          )}
+            {/* 1-Click Instant Demo Login (For Evaluators) */}
+            {!isRegister && (
+              <div style={{
+                background: "#f8fafc",
+                border: "1px solid #e2e8f0",
+                borderRadius: 10,
+                padding: "10px 12px",
+                marginBottom: 16
+              }}>
+                <div style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 5,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: "#64748b",
+                  letterSpacing: "0.04em",
+                  marginBottom: 8,
+                  textTransform: "uppercase"
+                }}>
+                  <Zap size={13} color="#f59e0b" fill="#f59e0b" />
+                  <span>1-Click Evaluator Demo Login</span>
+                </div>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {demoUsers.map((user) => (
+                    <button
+                      key={user.email}
+                      type="button"
+                      onClick={() => handleDemoSelect(user.email, user.password)}
+                      style={{
+                        background: "#ffffff",
+                        border: "1px solid #cbd5e1",
+                        borderRadius: 6,
+                        padding: "5px 9px",
+                        fontSize: 11.5,
+                        fontWeight: 600,
+                        color: "#1e293b",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                        transition: "all 0.15s"
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = "#2563eb";
+                        e.currentTarget.style.color = "#2563eb";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = "#cbd5e1";
+                        e.currentTarget.style.color = "#1e293b";
+                      }}
+                    >
+                      <span>{user.name}</span>
+                      <span style={{
+                        fontSize: 9.5,
+                        fontWeight: 700,
+                        padding: "1px 4px",
+                        borderRadius: 4,
+                        background: user.roleBadge === "ADMIN" ? "#fef3c7" : user.roleBadge === "EMPLOYEE" ? "#dcfce7" : "#e0e7ff",
+                        color: user.roleBadge === "ADMIN" ? "#92400e" : user.roleBadge === "EMPLOYEE" ? "#166534" : "#3730a3"
+                      }}>
+                        {user.roleBadge}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
           {/* Form: LOGIN / REGISTER */}
           {(authMode === "login" || authMode === "register") && (
@@ -554,6 +588,8 @@ export const AuthModal = ({ isOpen, onClose, onAuthSuccess, forceOpen = false })
           )}
         </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  return renderSplitScreenPage();
 };
