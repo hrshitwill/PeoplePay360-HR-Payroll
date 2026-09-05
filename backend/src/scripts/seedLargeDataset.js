@@ -76,7 +76,7 @@ const BANKS = ["Chase Bank", "Bank of America", "Wells Fargo", "Citibank", "Sili
 const seedLargeDataset = async () => {
     try {
         console.log("==================================================");
-        console.log("   PEOPLEPAY360 400-EMPLOYEE ENTERPRISE SEEDER    ");
+        console.log("   PEOPLEPAY360 120-EMPLOYEE ENTERPRISE SEEDER   ");
         console.log("==================================================");
 
         await mongoose.connect(process.env.MONGO_URI);
@@ -304,9 +304,9 @@ const seedLargeDataset = async () => {
             description: "Authorized absence without pay"
         });
 
-        // 5. Generate 400 Employees
-        console.log("5/7 Generating 400 Employees...");
-        const TOTAL_EMPLOYEES = 400;
+        // 5. Generate 120 Employees
+        console.log("5/7 Generating 120 Employees...");
+        const TOTAL_EMPLOYEES = 120;
         const employeeDocs = [];
 
         // Track used emails to guarantee uniqueness
@@ -339,11 +339,10 @@ const seedLargeDataset = async () => {
             const empType = i % 10 === 0 ? "CONTRACT" : i % 15 === 0 ? "PART_TIME" : "FULL_TIME";
             const scheduleId = empType === "PART_TIME" ? schedulePartTime._id : chosenDept.name === "Engineering" ? scheduleFlex._id : scheduleStandard._id;
 
-            // Bank details - intentionally leave 8 employees without complete bank details for operational alerts testing!
-            const missingBank = i % 45 === 0;
-            const bankName = missingBank ? "" : BANKS[i % BANKS.length];
-            const accNum = missingBank ? "" : `${Math.floor(100000000000 + Math.random() * 900000000000)}`;
-            const ifsc = missingBank ? "" : `${bankName.slice(0, 4).toUpperCase()}US33XXX`;
+            // Complete bank direct deposit details for all staff
+            const bankName = BANKS[i % BANKS.length];
+            const accNum = `${Math.floor(100000000000 + Math.random() * 900000000000)}`;
+            const ifsc = `${bankName.slice(0, 4).toUpperCase()}US33XXX`;
 
             const year = 2021 + (i % 5);
             const month = (i % 12) + 1;
@@ -359,7 +358,7 @@ const seedLargeDataset = async () => {
                 jobTitle: title,
                 employmentType: empType,
                 joiningDate: new Date(`${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`),
-                status: i === 380 || i === 395 ? "INACTIVE" : "ACTIVE",
+                status: "ACTIVE",
                 workingSchedule: scheduleId,
                 bankDetails: {
                     bankName,
@@ -372,7 +371,7 @@ const seedLargeDataset = async () => {
         }
 
         // Insert employees in chunks of 100
-        console.log("   -> Inserting 400 employee records into MongoDB...");
+        console.log("   -> Inserting 120 employee records into MongoDB...");
         const insertedEmployees = await Employee.insertMany(employeeDocs);
         console.log(`   ✓ Successfully inserted ${insertedEmployees.length} employees!`);
 

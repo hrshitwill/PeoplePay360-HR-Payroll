@@ -6,8 +6,8 @@ const getAllAttendance = async (req, res) => {
         const { employeeId, startDate, endDate, status } = req.query;
         const query = {};
 
-        if (employeeId) query.employee = employeeId;
-        if (status) query.status = status;
+        if (employeeId && employeeId !== "undefined" && employeeId !== "null") query.employee = employeeId;
+        if (status && status !== "undefined" && status !== "null") query.status = status;
 
         if (startDate || endDate) {
             query.date = {};

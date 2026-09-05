@@ -7,9 +7,9 @@ const getAllContracts = async (req, res) => {
         const { employeeId, status, department } = req.query;
         const query = {};
 
-        if (employeeId) query.employee = employeeId;
-        if (status) query.status = status;
-        if (department) query.department = department;
+        if (employeeId && employeeId !== "undefined" && employeeId !== "null") query.employee = employeeId;
+        if (status && status !== "undefined" && status !== "null") query.status = status;
+        if (department && department !== "undefined" && department !== "null") query.department = department;
 
         const contracts = await Contract.find(query)
             .populate("employee", "firstName lastName employeeId department jobTitle email avatar")
