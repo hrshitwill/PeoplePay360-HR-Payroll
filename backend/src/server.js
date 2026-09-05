@@ -4,25 +4,54 @@ require("dotenv").config();
 
 const connectDB = require("./config/db");
 
+// Import route handlers
+const employeeRoutes = require("./routes/employeeRoutes");
+const contractRoutes = require("./routes/contractRoutes");
+const workingScheduleRoutes = require("./routes/workingScheduleRoutes");
+const timeOffRoutes = require("./routes/timeOffRoutes");
+const attendanceRoutes = require("./routes/attendanceRoutes");
+const salaryRuleRoutes = require("./routes/salaryRuleRoutes");
+const salaryStructureRoutes = require("./routes/salaryStructureRoutes");
+const payrunRoutes = require("./routes/payrunRoutes");
+const payslipRoutes = require("./routes/payslipRoutes");
+const dashboardRoutes = require("./routes/dashboardRoutes");
+const authRoutes = require("./routes/authRoutes");
+const seedRoutes = require("./routes/seedRoutes");
+
 const app = express();
 
-// Connect MongoDB
+// Connect MongoDB Atlas
 connectDB();
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
+// API Endpoints
+app.use("/api/employees", employeeRoutes);
+app.use("/api/contracts", contractRoutes);
+app.use("/api/schedules", workingScheduleRoutes);
+app.use("/api/timeoff", timeOffRoutes);
+app.use("/api/attendance", attendanceRoutes);
+app.use("/api/salary-rules", salaryRuleRoutes);
+app.use("/api/salary-structures", salaryStructureRoutes);
+app.use("/api/payruns", payrunRoutes);
+app.use("/api/payslips", payslipRoutes);
+app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/seed", seedRoutes);
+
 // Health check
 app.get("/api/health", (req, res) => {
     res.json({
         success: true,
-        message: "PeoplePay360 backend is running"
+        message: "PeoplePay360 HR & Payroll backend is running smoothly",
+        timestamp: new Date()
     });
 });
 
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(`PeoplePay360 backend running on port ${PORT}`);
 });
