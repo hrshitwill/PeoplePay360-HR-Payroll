@@ -59,7 +59,7 @@ const register = async (req, res) => {
             const SalaryStructure = require("../models/SalaryStructure");
             const structure = await SalaryStructure.findOne({ active: true });
 
-            await Contract.create({
+            const contract = await Contract.create({
                 contractReference: `CNT-2026-${Math.floor(10000 + Math.random() * 90000)}`,
                 employee: employee._id,
                 contractType: "FULL_TIME",
@@ -88,6 +88,55 @@ const register = async (req, res) => {
                     validityStartDate: new Date("2026-01-01"),
                     validityEndDate: new Date("2026-12-31"),
                     status: "APPROVED"
+                });
+            }
+
+            // Auto-provision initial individual payrun records so employee can download their payruns
+            const Payrun = require("../models/Payrun");
+            const Payslip = require("../models/Payslip");
+            const { calculateSalary } = require("../services/salaryRuleEngine");
+
+            let latestPayrun = await Payrun.findOne().sort({ periodEnd: -1 });
+            if (!latestPayrun) {
+                latestPayrun = await Payrun.create({
+                    name: "August 2026 Regular Corporate Payrun",
+                    payrunBatchNumber: "PAYRUN-2026-08",
+                    periodStart: new Date("2026-08-01"),
+                    periodEnd: new Date("2026-08-31"),
+                    salaryStructure: structure ? structure._id : null,
+                    status: "APPROVED",
+                    paymentDate: new Date("2026-08-31"),
+                    employees: [employee._id]
+                });
+            } else if (!latestPayrun.employees.includes(employee._id)) {
+                latestPayrun.employees.push(employee._id);
+                await latestPayrun.save();
+            }
+
+            if (structure && contract) {
+                const populatedStructure = await SalaryStructure.findById(structure._id).populate({
+                    path: "rules",
+                    options: { sort: { sequence: 1 } }
+                });
+                const rules = populatedStructure?.rules || [];
+                const computed = calculateSalary(rules, contract.salary);
+                const psCount = await Payslip.countDocuments();
+
+                await Payslip.create({
+                    payslipNumber: `PS-2026-${String(psCount + 1).padStart(5, "0")}`,
+                    employee: employee._id,
+                    payrun: latestPayrun._id,
+                    contract: contract._id,
+                    salaryStructure: structure._id,
+                    periodStart: latestPayrun.periodStart,
+                    periodEnd: latestPayrun.periodEnd,
+                    workedDays: 22,
+                    totalWorkingDays: 22,
+                    grossSalary: computed.grossSalary,
+                    totalDeductions: computed.totalDeductions,
+                    netSalary: computed.netSalary,
+                    lines: computed.lines,
+                    status: "PAID"
                 });
             }
         }
@@ -160,6 +209,79 @@ const login = async (req, res) => {
             user.linkedEmployee = employee._id;
             await user.save();
             await user.populate("linkedEmployee");
+        }
+
+        // Ensure employee user has payrun statements available for download
+        if (user.role === "EMPLOYEE" && user.linkedEmployee) {
+            const Payslip = require("../models/Payslip");
+            const hasPayslips = await Payslip.countDocuments({ employee: user.linkedEmployee._id });
+            if (hasPayslips === 0) {
+                const Contract = require("../models/Contract");
+                const Payrun = require("../models/Payrun");
+                const SalaryStructure = require("../models/SalaryStructure");
+                const { calculateSalary } = require("../services/salaryRuleEngine");
+
+                const structure = await SalaryStructure.findOne({ active: true });
+                let contract = await Contract.findOne({ employee: user.linkedEmployee._id, status: "ACTIVE" });
+                if (!contract && structure) {
+                    contract = await Contract.create({
+                        contractReference: `CNT-2026-${Math.floor(10000 + Math.random() * 90000)}`,
+                        employee: user.linkedEmployee._id,
+                        contractType: "FULL_TIME",
+                        jobPosition: user.linkedEmployee.jobTitle || "Software Engineer",
+                        department: user.linkedEmployee.department || "Engineering",
+                        startDate: new Date("2026-01-01"),
+                        salary: 6500,
+                        salaryStructure: structure._id,
+                        status: "ACTIVE",
+                        notes: "Onboarding agreement"
+                    });
+                }
+
+                let latestPayrun = await Payrun.findOne().sort({ periodEnd: -1 });
+                if (!latestPayrun) {
+                    latestPayrun = await Payrun.create({
+                        name: "August 2026 Regular Corporate Payrun",
+                        payrunBatchNumber: "PAYRUN-2026-08",
+                        periodStart: new Date("2026-08-01"),
+                        periodEnd: new Date("2026-08-31"),
+                        salaryStructure: structure ? structure._id : null,
+                        status: "APPROVED",
+                        paymentDate: new Date("2026-08-31"),
+                        employees: [user.linkedEmployee._id]
+                    });
+                } else if (!latestPayrun.employees.includes(user.linkedEmployee._id)) {
+                    latestPayrun.employees.push(user.linkedEmployee._id);
+                    await latestPayrun.save();
+                }
+
+                if (contract && structure) {
+                    const populatedStructure = await SalaryStructure.findById(structure._id).populate({
+                        path: "rules",
+                        options: { sort: { sequence: 1 } }
+                    });
+                    const rules = populatedStructure?.rules || [];
+                    const computed = calculateSalary(rules, contract.salary);
+                    const psCount = await Payslip.countDocuments();
+
+                    await Payslip.create({
+                        payslipNumber: `PS-2026-${String(psCount + 1).padStart(5, "0")}`,
+                        employee: user.linkedEmployee._id,
+                        payrun: latestPayrun._id,
+                        contract: contract._id,
+                        salaryStructure: structure._id,
+                        periodStart: latestPayrun.periodStart,
+                        periodEnd: latestPayrun.periodEnd,
+                        workedDays: 22,
+                        totalWorkingDays: 22,
+                        grossSalary: computed.grossSalary,
+                        totalDeductions: computed.totalDeductions,
+                        netSalary: computed.netSalary,
+                        lines: computed.lines,
+                        status: "PAID"
+                    });
+                }
+            }
         }
 
         const token = generateToken(user);

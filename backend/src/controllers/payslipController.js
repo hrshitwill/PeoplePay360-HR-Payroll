@@ -67,8 +67,29 @@ const sendSinglePayslipEmail = async (req, res) => {
     }
 };
 
+const getEmployeePayruns = async (req, res) => {
+    try {
+        const { employeeId } = req.params;
+        const payslips = await Payslip.find({ employee: employeeId })
+            .populate("employee", "firstName lastName employeeId department jobTitle email avatar bankDetails")
+            .populate("payrun", "name periodStart periodEnd status payrunBatchNumber paymentDate")
+            .populate("contract", "contractReference salary contractType")
+            .populate("salaryStructure", "name code")
+            .sort({ periodEnd: -1, createdAt: -1 });
+
+        res.json({
+            success: true,
+            count: payslips.length,
+            data: payslips
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 module.exports = {
     getAllPayslips,
     getPayslipById,
-    sendSinglePayslipEmail
+    sendSinglePayslipEmail,
+    getEmployeePayruns
 };

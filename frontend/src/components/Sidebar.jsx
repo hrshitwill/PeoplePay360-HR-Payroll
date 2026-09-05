@@ -35,7 +35,7 @@ export const Sidebar = ({
         { id: "dashboard", label: "My Dashboard", icon: LayoutDashboard },
         { id: "attendance", label: "My Attendance", icon: Clock },
         { id: "timeoff", label: "My Time Off", icon: Calendar },
-        { id: "payslips", label: "My Payslips", icon: FileSpreadsheet }
+        { id: "payslips", label: "My Payruns", icon: FileSpreadsheet }
       ]
     : [
         { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },

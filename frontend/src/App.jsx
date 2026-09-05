@@ -201,6 +201,8 @@ function App() {
             /* Dedicated Client Dashboard for Employee persona */
             <EmployeeDashboard
               currentUser={currentUser}
+              activeTab={activeTab}
+              onNavigateTab={(tab) => setActiveTab(tab)}
               onSignOut={handleSignOut}
             />
           ) : (

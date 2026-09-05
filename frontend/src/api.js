@@ -357,9 +357,13 @@ export const api = {
       headers: authHeaders()
     }).then(handleResponse),
 
-  // Payslips
+  // Payslips & Payrun Statements
   getPayslips: (params = {}) =>
     fetch(`${API_BASE}/payslips${buildQuery(params)}`, {
+      headers: authHeaders()
+    }).then(handleResponse),
+  getEmployeePayruns: (employeeId) =>
+    fetch(`${API_BASE}/payslips/employee/${employeeId}`, {
       headers: authHeaders()
     }).then(handleResponse),
   getPayslipById: (id) =>
