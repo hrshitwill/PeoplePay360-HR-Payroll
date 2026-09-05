@@ -17,6 +17,7 @@ const payslipRoutes = require("./routes/payslipRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const authRoutes = require("./routes/authRoutes");
 const seedRoutes = require("./routes/seedRoutes");
+const aiRoutes = require("./routes/aiRoutes");
 
 const app = express();
 
@@ -44,6 +45,7 @@ app.use("/api/payslips", payslipRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/seed", seedRoutes);
+app.use("/api/ai", aiRoutes);
 
 // Health check
 app.get("/api/health", (req, res) => {

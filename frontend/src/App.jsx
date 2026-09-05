@@ -18,7 +18,6 @@ function App() {
   const [currentRole, setCurrentRole] = useState("EMPLOYEE");
   const [currentUser, setCurrentUser] = useState(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const [reseedLoading, setReseedLoading] = useState(false);
   const [notification, setNotification] = useState("");
   const [sessionChecking, setSessionChecking] = useState(true);
 
@@ -44,7 +43,6 @@ function App() {
           api.removeToken();
         }
       }
-      // No valid user session: require user to register or sign in with their own ID
       setCurrentUser(null);
       setIsAuthOpen(true);
       setSessionChecking(false);
@@ -75,7 +73,6 @@ function App() {
     setTimeout(() => setNotification(""), 3000);
   };
 
-  // If initial token validation is loading, show clean loader
   if (sessionChecking) {
     return (
       <div style={{
@@ -103,7 +100,6 @@ function App() {
     );
   }
 
-  // If no user is logged in, show Auth login page
   if (!currentUser) {
     return (
       <AuthModal
@@ -257,28 +253,6 @@ function App() {
             </>
           )}
         </main>
-
-        {/* Floating AI Assistant */}
-        <button
-          className="floating-ai-assistant-btn"
-          onClick={() => {
-            setNotification("PeoplePay360 AI Assistant: Ready to assist with HR & Payroll questions.");
-            setTimeout(() => setNotification(""), 4000);
-          }}
-          title="PeoplePay360 AI Assistant"
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 2L14.4 7.6L20 10L14.4 12.4L12 18L9.6 12.4L4 10L9.6 7.6L12 2Z" fill="url(#aiGrad)" />
-            <path d="M19 16L20.2 18.8L23 20L20.2 21.2L19 24L17.8 21.2L15 20L17.8 18.8L19 16Z" fill="#a855f7" />
-            <defs>
-              <linearGradient id="aiGrad" x1="4" y1="2" x2="20" y2="18" gradientUnits="userSpaceOnUse">
-                <stop stopColor="#3b82f6" />
-                <stop offset="0.5" stopColor="#8b5cf6" />
-                <stop offset="1" stopColor="#ec4899" />
-              </linearGradient>
-            </defs>
-          </svg>
-        </button>
       </div>
     </div>
   );

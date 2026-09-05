@@ -294,10 +294,10 @@ export const TimeOffModule = ({ initialSubtab, initialEmployeeId, currentRole })
                     <tr key={req._id}>
                       <td>
                         <div style={{ fontWeight: 600, color: "#0f172a" }}>
-                          {req.employee?.firstName} {req.employee?.lastName}
+                          {req.employee ? `${req.employee.firstName || ''} ${req.employee.lastName || ''}`.trim() || req.employee.name : "Corporate Employee"}
                         </div>
                         <div style={{ fontSize: 12, color: "#64748b" }}>
-                          {req.employee?.employeeId} • {req.employee?.department}
+                          {req.employee?.employeeId || "EMP-GENERAL"} • {req.employee?.department || "Operations"}
                         </div>
                       </td>
                       <td>
@@ -309,7 +309,7 @@ export const TimeOffModule = ({ initialSubtab, initialEmployeeId, currentRole })
                             border: `1px solid ${req.timeOffType?.color || "#3b82f6"}40`
                           }}
                         >
-                          {req.timeOffType?.name || "Leave"}
+                          {req.timeOffType?.name || "Paid Time Off"}
                         </span>
                       </td>
                       <td>

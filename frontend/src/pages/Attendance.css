@@ -1,0 +1,118 @@
+.attendance-container {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.attendance-header h1 {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.attendance-header p {
+  color: var(--text-secondary);
+  margin: 4px 0 0 0;
+}
+
+.attendance-action-card {
+  background: var(--bg-card, #18181b);
+  border: 1px solid var(--border-color, #27272a);
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.status-display {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.icon-clock {
+  color: #818cf8;
+  background: rgba(99, 102, 241, 0.15);
+  padding: 10px;
+  border-radius: 12px;
+}
+
+.status-display h3 {
+  font-size: 16px;
+  margin: 0;
+}
+
+.status-display p {
+  color: var(--text-secondary);
+  margin: 4px 0 0 0;
+  font-size: 14px;
+}
+
+.btn-checkin {
+  background: #10b981;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-checkout {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.attendance-list-card {
+  background: var(--bg-card, #18181b);
+  border: 1px solid var(--border-color, #27272a);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.attendance-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 16px;
+}
+
+.attendance-table th, .attendance-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color, #27272a);
+  font-size: 14px;
+}
+
+.in-progress {
+  color: #f59e0b;
+  font-style: italic;
+}
+
+.badge-status {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.badge-status.completed {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+}
+
+.badge-status.active {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+}
