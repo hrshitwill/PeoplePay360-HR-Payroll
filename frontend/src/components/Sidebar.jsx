@@ -26,19 +26,27 @@ export const Sidebar = ({
   const [collapsed, setCollapsed] = useState(false);
 
   // Role-based visibility
+  const isEmployee = currentRole === "EMPLOYEE";
   const canAccessPayroll = currentRole !== "HR_MANAGER" && currentRole !== "EMPLOYEE";
   const canAccessFullHR = currentRole !== "EMPLOYEE";
 
-  const navItems = [
-    { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { id: "employees", label: "Employees", icon: Users },
-    ...(canAccessFullHR ? [{ id: "contracts", label: "Contracts", icon: FileText }] : []),
-    { id: "attendance", label: "Attendance", icon: Clock },
-    { id: "timeoff", label: "Time Off", icon: Calendar },
-    ...(canAccessPayroll ? [{ id: "payroll", label: "Payroll", icon: DollarSign }] : []),
-    ...(canAccessPayroll ? [{ id: "payslips", label: "Payslips", icon: FileSpreadsheet }] : []),
-    { id: "reports", label: "Reports", icon: BarChart3 }
-  ];
+  const navItems = isEmployee
+    ? [
+        { id: "dashboard", label: "My Dashboard", icon: LayoutDashboard },
+        { id: "attendance", label: "My Attendance", icon: Clock },
+        { id: "timeoff", label: "My Time Off", icon: Calendar },
+        { id: "payslips", label: "My Payslips", icon: FileSpreadsheet }
+      ]
+    : [
+        { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+        { id: "employees", label: "Employees", icon: Users },
+        ...(canAccessFullHR ? [{ id: "contracts", label: "Contracts", icon: FileText }] : []),
+        { id: "attendance", label: "Attendance", icon: Clock },
+        { id: "timeoff", label: "Time Off", icon: Calendar },
+        ...(canAccessPayroll ? [{ id: "payroll", label: "Payroll", icon: DollarSign }] : []),
+        ...(canAccessPayroll ? [{ id: "payslips", label: "Payslips", icon: FileSpreadsheet }] : []),
+        { id: "reports", label: "Reports", icon: BarChart3 }
+      ];
 
   const handleNavClick = (item) => {
     setActiveTab(item.id);

@@ -599,7 +599,7 @@ const seedDatabase = async () => {
         ];
 
         for (const u of usersData) {
-            await User.create(u);
+            await User.create({ ...u, status: "INACTIVE" });
         }
 
         console.log("Database seeded successfully with realistic enterprise data!");

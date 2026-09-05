@@ -34,6 +34,13 @@ const connectDB = async () => {
             await seedLargeDataset();
             console.log("Initial enterprise dataset seeding complete!");
         }
+
+        // Ensure all legacy demo accounts are set to INACTIVE so users must register/login with their own ID
+        const User = require("../models/User");
+        await User.updateMany(
+            { email: { $in: ["admin@peoplepay360.com", "sarah.jenkins@peoplepay360.com", "david.kim@peoplepay360.com", "elena.rostova@peoplepay360.com", "alex.morgan@peoplepay360.com"] } },
+            { $set: { status: "INACTIVE" } }
+        );
     } catch (error) {
         console.error("MongoDB connection failed:", error.message);
         process.exit(1);

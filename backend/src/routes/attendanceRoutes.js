@@ -6,11 +6,15 @@ const {
     clockOut,
     manualCorrection,
     createAttendance,
-    getAttendanceStats
+    getAttendanceStats,
+    getTodayAttendance,
+    getEmployeeAttendance
 } = require("../controllers/attendanceController");
 
 router.get("/", getAllAttendance);
 router.get("/stats", getAttendanceStats);
+router.get("/today/:employeeId", getTodayAttendance);
+router.get("/employee/:employeeId", getEmployeeAttendance);
 router.post("/clock-in", clockIn);
 router.post("/clock-out", clockOut);
 router.post("/manual", createAttendance);

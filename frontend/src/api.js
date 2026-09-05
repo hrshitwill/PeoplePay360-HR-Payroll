@@ -181,6 +181,14 @@ export const api = {
     fetch(`${API_BASE}/attendance/stats`, {
       headers: authHeaders()
     }).then(handleResponse),
+  getTodayAttendance: (employeeId) =>
+    fetch(`${API_BASE}/attendance/today/${employeeId}`, {
+      headers: authHeaders()
+    }).then(handleResponse),
+  getEmployeeAttendance: (employeeId, params = {}) =>
+    fetch(`${API_BASE}/attendance/employee/${employeeId}${buildQuery(params)}`, {
+      headers: authHeaders()
+    }).then(handleResponse),
   clockIn: (employeeId) =>
     fetch(`${API_BASE}/attendance/clock-in`, {
       method: "POST",

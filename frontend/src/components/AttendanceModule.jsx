@@ -21,11 +21,6 @@ export const AttendanceModule = ({ initialEmployeeId, currentRole }) => {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState(initialEmployeeId || "");
   const [statusFilter, setStatusFilter] = useState("");
 
-  // Clock in/out widget state
-  const [clockEmployeeId, setClockEmployeeId] = useState("");
-  const [clockMessage, setClockMessage] = useState("");
-  const [clockLoading, setClockLoading] = useState(false);
-
   // Manual Correction Modal
   const [correctingRecord, setCorrectingRecord] = useState(null);
   const [correctionForm, setCorrectionForm] = useState({
@@ -79,36 +74,6 @@ export const AttendanceModule = ({ initialEmployeeId, currentRole }) => {
     loadAttendance();
   }, [selectedEmployeeId, statusFilter]);
 
-  const handleClockIn = async () => {
-    if (!clockEmployeeId) return;
-    try {
-      setClockLoading(true);
-      setClockMessage("");
-      const res = await api.clockIn(clockEmployeeId);
-      setClockMessage(res.message);
-      loadAttendance();
-    } catch (err) {
-      setClockMessage(`Error: ${err.message}`);
-    } finally {
-      setClockLoading(false);
-    }
-  };
-
-  const handleClockOut = async () => {
-    if (!clockEmployeeId) return;
-    try {
-      setClockLoading(true);
-      setClockMessage("");
-      const res = await api.clockOut(clockEmployeeId);
-      setClockMessage(res.message);
-      loadAttendance();
-    } catch (err) {
-      setClockMessage(`Error: ${err.message}`);
-    } finally {
-      setClockLoading(false);
-    }
-  };
-
   const openCorrectionModal = (record) => {
     setCorrectingRecord(record);
     const formatDT = (d) => (d ? new Date(d).toISOString().slice(0, 16) : "");
@@ -145,58 +110,24 @@ export const AttendanceModule = ({ initialEmployeeId, currentRole }) => {
         </div>
       </div>
 
-      {/* Clock In / Out Quick Widget */}
-      <div className="card" style={{ marginBottom: 24, background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)" }}>
-        <div className="card-body" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 20 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            <div style={{ width: 44, height: 44, borderRadius: 10, background: "#eef2ff", color: "#4f46e5", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Clock size={22} />
+      {/* Admin Attendance Tracking Banner */}
+      <div className="card" style={{ marginBottom: 20, borderLeft: "4px solid #4f46e5", padding: "16px 20px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ width: 40, height: 40, borderRadius: 10, background: "#eef2ff", color: "#4f46e5", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Clock size={20} />
             </div>
             <div>
-              <h3 style={{ fontSize: 16, fontWeight: 700, color: "#0f172a" }}>Quick Time Clock Terminal</h3>
+              <h3 style={{ fontSize: 15, fontWeight: 700, color: "#0f172a" }}>Attendance & Timestamp Verification Ledger</h3>
               <p style={{ fontSize: 13, color: "#64748b" }}>
-                Select employee to simulate biometric badge in / badge out
+                Authorized audit logs of employee check-in and check-out timestamps with duration calculation
               </p>
             </div>
           </div>
-
-          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12 }}>
-            <select
-              className="form-control"
-              style={{ width: "auto", minWidth: 220 }}
-              value={clockEmployeeId}
-              onChange={(e) => setClockEmployeeId(e.target.value)}
-            >
-              {employees.map((e) => (
-                <option key={e._id} value={e._id}>
-                  {e.firstName} {e.lastName} ({e.employeeId})
-                </option>
-              ))}
-            </select>
-
-            <button
-              className="btn btn-success"
-              onClick={handleClockIn}
-              disabled={clockLoading}
-            >
-              <LogIn size={15} /> Clock In
-            </button>
-
-            <button
-              className="btn btn-danger"
-              onClick={handleClockOut}
-              disabled={clockLoading}
-            >
-              <LogOut size={15} /> Clock Out
-            </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span className="badge badge-active" style={{ fontSize: 12 }}>Admin Monitor Mode</span>
           </div>
         </div>
-
-        {clockMessage && (
-          <div style={{ padding: "8px 24px", background: "#f1f5f9", fontSize: 13, color: "#334155", borderTop: "1px solid #e2e8f0" }}>
-            {clockMessage}
-          </div>
-        )}
       </div>
 
       {/* Stats Cards */}
@@ -283,9 +214,9 @@ export const AttendanceModule = ({ initialEmployeeId, currentRole }) => {
               <tr>
                 <th>Employee</th>
                 <th>Shift Date</th>
-                <th>Check In</th>
-                <th>Check Out</th>
-                <th>Worked Hours</th>
+                <th>Check In (Timestamp)</th>
+                <th>Check Out (Timestamp)</th>
+                <th>Duration / Worked</th>
                 <th>Status</th>
                 <th>Audit / Edits</th>
                 <th>Actions</th>
@@ -306,7 +237,11 @@ export const AttendanceModule = ({ initialEmployeeId, currentRole }) => {
                 </tr>
               ) : (
                 attendance.map((att) => {
-                  const formatTime = (d) => (d ? new Date(d).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—");
+                  const formatTimestamp = (d) => {
+                    if (!d) return "—";
+                    const dateObj = new Date(d);
+                    return dateObj.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+                  };
                   return (
                     <tr key={att._id}>
                       <td>
@@ -317,9 +252,27 @@ export const AttendanceModule = ({ initialEmployeeId, currentRole }) => {
                           {att.employee?.employeeId} • {att.employee?.department}
                         </div>
                       </td>
-                      <td>{new Date(att.date).toLocaleDateString()}</td>
-                      <td style={{ fontWeight: 500 }}>{formatTime(att.checkIn)}</td>
-                      <td style={{ fontWeight: 500 }}>{formatTime(att.checkOut)}</td>
+                      <td>
+                        <span style={{ fontWeight: 500, color: "#334155" }}>
+                          {new Date(att.date).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+                        </span>
+                      </td>
+                      <td>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 600, color: att.checkIn ? "#047857" : "#64748b" }}>
+                          <LogIn size={13} color="#10b981" />
+                          <span>{formatTimestamp(att.checkIn)}</span>
+                        </div>
+                      </td>
+                      <td>
+                        {att.checkOut ? (
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 600, color: "#4338ca" }}>
+                            <LogOut size={13} color="#6366f1" />
+                            <span>{formatTimestamp(att.checkOut)}</span>
+                          </div>
+                        ) : (
+                          <span className="badge badge-warning" style={{ fontSize: 11 }}>In Progress</span>
+                        )}
+                      </td>
                       <td>
                         <strong>{att.workedHours || 0} hrs</strong>
                       </td>

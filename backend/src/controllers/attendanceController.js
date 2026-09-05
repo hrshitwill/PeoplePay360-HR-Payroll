@@ -183,11 +183,53 @@ const getAttendanceStats = async (req, res) => {
     }
 };
 
+// Get today's attendance for a specific employee
+const getTodayAttendance = async (req, res) => {
+    try {
+        const { employeeId } = req.params;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const attendance = await Attendance.findOne({
+            employee: employeeId,
+            date: { $gte: today }
+        }).populate("employee", "firstName lastName employeeId department");
+
+        res.json({
+            success: true,
+            data: attendance || null
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// Get personal attendance logs for employee
+const getEmployeeAttendance = async (req, res) => {
+    try {
+        const { employeeId } = req.params;
+        const records = await Attendance.find({ employee: employeeId })
+            .populate("employee", "firstName lastName employeeId department")
+            .sort({ date: -1, checkIn: -1 })
+            .limit(100);
+
+        res.json({
+            success: true,
+            count: records.length,
+            data: records
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 module.exports = {
     getAllAttendance,
     clockIn,
     clockOut,
     manualCorrection,
     createAttendance,
-    getAttendanceStats
+    getAttendanceStats,
+    getTodayAttendance,
+    getEmployeeAttendance
 };

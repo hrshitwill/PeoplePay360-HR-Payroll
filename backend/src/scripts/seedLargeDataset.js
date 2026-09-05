@@ -640,7 +640,7 @@ const seedLargeDataset = async () => {
         ];
 
         for (const u of users) {
-            await User.create(u);
+            await User.create({ ...u, status: "INACTIVE" });
         }
 
         console.log("==================================================");
