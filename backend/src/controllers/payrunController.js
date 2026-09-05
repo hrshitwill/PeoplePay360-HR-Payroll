@@ -1,6 +1,7 @@
 const Payrun = require("../models/Payrun");
 const Employee = require("../models/Employee");
 const Contract = require("../models/Contract");
+const Payslip = require("../models/Payslip");
 const { calculatePayroll } = require("../services/payrollEngine");
 
 
@@ -30,9 +31,22 @@ const getPayruns = async (req, res) => {
             .populate("employees")
             .sort({ createdAt: -1 });
 
+        // Attach payslip counts
+        const payrunsWithCounts = await Promise.all(
+            payruns.map(async (payrun) => {
+                const payslipCount = await Payslip.countDocuments({
+                    payrun: payrun._id
+                });
+                return {
+                    ...payrun.toObject(),
+                    payslipCount
+                };
+            })
+        );
+
         res.json({
             success: true,
-            data: payruns
+            data: payrunsWithCounts
         });
     } catch (error) {
         res.status(500).json({
@@ -57,9 +71,16 @@ const getPayrunById = async (req, res) => {
             });
         }
 
+        // Get associated payslips
+        const payslips = await Payslip.find({ payrun: payrun._id })
+            .populate("employee");
+
         res.json({
             success: true,
-            data: payrun
+            data: {
+                ...payrun.toObject(),
+                payslips
+            }
         });
     } catch (error) {
         res.status(500).json({
@@ -70,7 +91,61 @@ const getPayrunById = async (req, res) => {
 };
 
 
-// Compute Payrun
+// Get eligible employees for a payrun (wizard step 2)
+const getEligibleEmployees = async (req, res) => {
+    try {
+        const { structureId, periodStart, periodEnd } = req.query;
+
+        // Find employees with active contracts that have this salary structure
+        // and are valid for the period
+        const contractFilter = {
+            status: "ACTIVE",
+            startDate: { $lte: new Date(periodEnd) },
+            $or: [
+                { endDate: null },
+                { endDate: { $gte: new Date(periodStart) } }
+            ]
+        };
+
+        if (structureId) {
+            contractFilter.salaryStructure = structureId;
+        }
+
+        const contracts = await Contract.find(contractFilter)
+            .populate("employee")
+            .populate("salaryStructure");
+
+        // Get unique employees
+        const employeeMap = new Map();
+        contracts.forEach(contract => {
+            if (contract.employee && contract.employee.status === "ACTIVE") {
+                employeeMap.set(contract.employee._id.toString(), {
+                    employee: contract.employee,
+                    contract: {
+                        _id: contract._id,
+                        salary: contract.salary,
+                        contractType: contract.contractType,
+                        startDate: contract.startDate,
+                        endDate: contract.endDate
+                    }
+                });
+            }
+        });
+
+        res.json({
+            success: true,
+            data: Array.from(employeeMap.values())
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+
+// Compute Payrun - generates payslips
 const computePayrun = async (req, res) => {
     try {
         const payrun = await Payrun.findById(req.params.id)
@@ -121,10 +196,20 @@ const computePayrun = async (req, res) => {
         let totalGross = 0;
         let totalDeductions = 0;
         let totalNet = 0;
-
-        const employeeResults = [];
+        const warnings = [];
+        const generatedPayslips = [];
 
         for (const employee of payrun.employees) {
+            // Check for duplicate payslip
+            const existingPayslip = await Payslip.findOne({
+                employee: employee._id,
+                payrun: payrun._id
+            });
+
+            if (existingPayslip) {
+                warnings.push(`${employee.firstName} ${employee.lastName}: Duplicate payslip skipped`);
+                continue;
+            }
 
             const contract = await Contract.findOne({
                 employee: employee._id,
@@ -137,13 +222,13 @@ const computePayrun = async (req, res) => {
             }).sort({ startDate: -1 });
 
             if (!contract) {
-                employeeResults.push({
-                    employee: employee._id,
-                    employeeName: `${employee.firstName} ${employee.lastName}`,
-                    error: "No active contract found"
-                });
-
+                warnings.push(`${employee.firstName} ${employee.lastName}: No active contract found`);
                 continue;
+            }
+
+            // Check for missing bank account
+            if (!employee.bankAccount) {
+                warnings.push(`${employee.firstName} ${employee.lastName}: Missing bank account details`);
             }
 
             const result = calculatePayroll(
@@ -151,22 +236,56 @@ const computePayrun = async (req, res) => {
                 payrun.salaryStructure.rules
             );
 
+            const earnings = result.breakdown
+                .filter(rule => rule.type === "EARNING")
+                .map(rule => ({
+                    code: rule.code,
+                    name: rule.name,
+                    category: rule.category,
+                    amount: rule.amount
+                }));
+
+            const deductions = result.breakdown
+                .filter(rule => rule.type === "DEDUCTION")
+                .map(rule => ({
+                    code: rule.code,
+                    name: rule.name,
+                    category: rule.category,
+                    amount: rule.amount
+                }));
+
+            const payslip = await Payslip.create({
+                employee: employee._id,
+                payrun: payrun._id,
+                contract: contract._id,
+                salaryStructure: payrun.salaryStructure._id,
+                periodStart: payrun.periodStart,
+                periodEnd: payrun.periodEnd,
+                contractSalary: contract.salary,
+                workedDays: 22, // default working days
+                earnings,
+                deductions,
+                gross: result.gross,
+                totalDeductions: result.deductions,
+                net: result.net,
+                breakdown: result.breakdown,
+                warnings: !employee.bankAccount
+                    ? ["Missing bank account details"]
+                    : [],
+                status: "GENERATED"
+            });
+
+            generatedPayslips.push(payslip);
             totalGross += result.gross;
             totalDeductions += result.deductions;
             totalNet += result.net;
-
-            employeeResults.push({
-                employee: employee._id,
-                employeeName: `${employee.firstName} ${employee.lastName}`,
-                contractSalary: contract.salary,
-                payroll: result
-            });
         }
 
         payrun.totalGross = totalGross;
         payrun.totalDeductions = totalDeductions;
         payrun.totalNet = totalNet;
         payrun.status = "COMPUTED";
+        payrun.warnings = warnings;
 
         await payrun.save();
 
@@ -175,7 +294,8 @@ const computePayrun = async (req, res) => {
             message: "Payrun computed successfully",
             data: {
                 payrun,
-                employees: employeeResults
+                payslips: generatedPayslips,
+                warnings
             }
         });
 
@@ -186,6 +306,9 @@ const computePayrun = async (req, res) => {
         });
     }
 };
+
+
+// Validate Payrun
 const validatePayrun = async (req, res) => {
     try {
         const payrun = await Payrun.findById(req.params.id)
@@ -208,36 +331,22 @@ const validatePayrun = async (req, res) => {
 
         const errors = [];
 
-        // Check salary structure
         if (!payrun.salaryStructure) {
             errors.push("Salary structure is missing");
         }
 
-        // Check employees
         if (!payrun.employees || payrun.employees.length === 0) {
             errors.push("No employees are assigned to this payrun");
-        }
-
-        // Check payroll totals
-        if (payrun.totalGross < 0) {
-            errors.push("Gross salary cannot be negative");
-        }
-
-        if (payrun.totalDeductions < 0) {
-            errors.push("Deductions cannot be negative");
         }
 
         if (payrun.totalNet < 0) {
             errors.push("Net salary cannot be negative");
         }
 
-        // Check salary structure rules
-        if (
-            payrun.salaryStructure &&
-            (!payrun.salaryStructure.rules ||
-                payrun.salaryStructure.rules.length === 0)
-        ) {
-            errors.push("Salary structure has no salary rules");
+        // Check all payslips exist
+        const payslipCount = await Payslip.countDocuments({ payrun: payrun._id });
+        if (payslipCount === 0) {
+            errors.push("No payslips generated for this payrun");
         }
 
         if (errors.length > 0) {
@@ -249,8 +358,13 @@ const validatePayrun = async (req, res) => {
         }
 
         payrun.status = "VALIDATED";
-
         await payrun.save();
+
+        // Update all payslips status
+        await Payslip.updateMany(
+            { payrun: payrun._id },
+            { status: "VALIDATED" }
+        );
 
         res.json({
             success: true,
@@ -266,10 +380,119 @@ const validatePayrun = async (req, res) => {
     }
 };
 
+
+// Mark Payrun as Paid
+const markPaid = async (req, res) => {
+    try {
+        const payrun = await Payrun.findById(req.params.id);
+
+        if (!payrun) {
+            return res.status(404).json({
+                success: false,
+                message: "Payrun not found"
+            });
+        }
+
+        if (payrun.status !== "VALIDATED") {
+            return res.status(400).json({
+                success: false,
+                message: "Only VALIDATED payruns can be marked as paid"
+            });
+        }
+
+        payrun.status = "PAID";
+        payrun.paidDate = new Date();
+        await payrun.save();
+
+        // Update all payslips status
+        await Payslip.updateMany(
+            { payrun: payrun._id },
+            { status: "PAID" }
+        );
+
+        res.json({
+            success: true,
+            message: "Payrun marked as paid",
+            data: payrun
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+
+// Send Payslips (simulate bulk email)
+const sendPayslips = async (req, res) => {
+    try {
+        const payrun = await Payrun.findById(req.params.id)
+            .populate("employees");
+
+        if (!payrun) {
+            return res.status(404).json({
+                success: false,
+                message: "Payrun not found"
+            });
+        }
+
+        if (payrun.status !== "PAID" && payrun.status !== "VALIDATED") {
+            return res.status(400).json({
+                success: false,
+                message: "Payrun must be VALIDATED or PAID to send payslips"
+            });
+        }
+
+        const payslips = await Payslip.find({ payrun: payrun._id })
+            .populate("employee");
+
+        const sentTo = [];
+        const failedFor = [];
+
+        for (const payslip of payslips) {
+            if (payslip.employee && payslip.employee.email) {
+                // In production, integrate with email service here
+                sentTo.push({
+                    employee: `${payslip.employee.firstName} ${payslip.employee.lastName}`,
+                    email: payslip.employee.email
+                });
+            } else {
+                failedFor.push({
+                    employee: payslip.employee
+                        ? `${payslip.employee.firstName} ${payslip.employee.lastName}`
+                        : "Unknown",
+                    reason: "Missing email address"
+                });
+            }
+        }
+
+        res.json({
+            success: true,
+            message: `Payslips sent to ${sentTo.length} employee(s)`,
+            data: {
+                sent: sentTo,
+                failed: failedFor
+            }
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+
 module.exports = {
     createPayrun,
     getPayruns,
     getPayrunById,
+    getEligibleEmployees,
+    computePayrun,
     validatePayrun,
-    computePayrun
+    markPaid,
+    sendPayslips
 };

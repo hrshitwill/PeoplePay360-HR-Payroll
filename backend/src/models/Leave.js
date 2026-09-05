@@ -8,6 +8,18 @@ const leaveSchema = new mongoose.Schema(
             required: true
         },
 
+        timeOffType: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "TimeOffType",
+            default: null
+        },
+
+        allocation: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "TimeOffAllocation",
+            default: null
+        },
+
         leaveType: {
             type: String,
             enum: ["CASUAL", "SICK", "PAID", "UNPAID", "OTHER"],
@@ -39,11 +51,6 @@ const leaveSchema = new mongoose.Schema(
             type: String,
             enum: ["PENDING", "APPROVED", "REJECTED"],
             default: "PENDING"
-        },
-
-        allocation: {
-            type: Number,
-            default: 20
         }
     },
     {

@@ -50,6 +50,17 @@ const payrunSchema = new mongoose.Schema(
         totalNet: {
             type: Number,
             default: 0
+        },
+
+        warnings: [
+            {
+                type: String
+            }
+        ],
+
+        paidDate: {
+            type: Date,
+            default: null
         }
     },
     {

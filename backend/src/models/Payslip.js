@@ -14,6 +14,18 @@ const payslipSchema = new mongoose.Schema(
             required: true
         },
 
+        contract: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Contract",
+            default: null
+        },
+
+        salaryStructure: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "SalaryStructure",
+            default: null
+        },
+
         periodStart: {
             type: Date,
             required: true
@@ -30,10 +42,16 @@ const payslipSchema = new mongoose.Schema(
             min: 0
         },
 
+        workedDays: {
+            type: Number,
+            default: 0
+        },
+
         earnings: [
             {
                 code: String,
                 name: String,
+                category: String,
                 amount: Number
             }
         ],
@@ -42,6 +60,7 @@ const payslipSchema = new mongoose.Schema(
             {
                 code: String,
                 name: String,
+                category: String,
                 amount: Number
             }
         ],
@@ -67,21 +86,28 @@ const payslipSchema = new mongoose.Schema(
             {
                 code: String,
                 name: String,
+                category: String,
                 type: {
                     type: String,
                     enum: ["EARNING", "DEDUCTION"]
                 },
                 calculationType: {
                     type: String,
-                    enum: ["FIXED", "PERCENTAGE"]
+                    enum: ["FIXED", "PERCENTAGE", "FORMULA"]
                 },
                 amount: Number
             }
         ],
 
+        warnings: [
+            {
+                type: String
+            }
+        ],
+
         status: {
             type: String,
-            enum: ["GENERATED", "PAID"],
+            enum: ["DRAFT", "GENERATED", "VALIDATED", "PAID"],
             default: "GENERATED"
         }
     },

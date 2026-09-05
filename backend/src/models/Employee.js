@@ -43,6 +43,34 @@ const employeeSchema = new mongoose.Schema(
             default: ""
         },
 
+        jobPosition: {
+            type: String,
+            default: ""
+        },
+
+        manager: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Employee",
+            default: null
+        },
+
+        workingSchedule: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "WorkingSchedule",
+            default: null
+        },
+
+        employeeType: {
+            type: String,
+            enum: ["FULL_TIME", "PART_TIME", "CONTRACT", "INTERN"],
+            default: "FULL_TIME"
+        },
+
+        bankAccount: {
+            type: String,
+            default: ""
+        },
+
         joiningDate: {
             type: Date,
             required: true

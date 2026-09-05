@@ -25,13 +25,29 @@ const attendanceSchema = new mongoose.Schema(
 
         status: {
             type: String,
-            enum: ["PRESENT", "ABSENT", "HALF_DAY", "ON_LEAVE"],
+            enum: ["PRESENT", "ABSENT", "HALF_DAY", "ON_LEAVE", "LATE"],
             default: "PRESENT"
         },
 
         workingHours: {
             type: Number,
             default: 0
+        },
+
+        overtimeHours: {
+            type: Number,
+            default: 0
+        },
+
+        isManualCorrection: {
+            type: Boolean,
+            default: false
+        },
+
+        correctedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            default: null
         },
 
         remarks: {

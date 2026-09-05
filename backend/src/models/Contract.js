@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 require("./SalaryStructure");
+
 const contractSchema = new mongoose.Schema(
     {
         employee: {
@@ -12,6 +13,16 @@ const contractSchema = new mongoose.Schema(
             type: String,
             enum: ["FULL_TIME", "PART_TIME", "CONTRACT"],
             default: "FULL_TIME"
+        },
+
+        department: {
+            type: String,
+            default: ""
+        },
+
+        jobPosition: {
+            type: String,
+            default: ""
         },
 
         startDate: {
@@ -33,6 +44,12 @@ const contractSchema = new mongoose.Schema(
         salaryStructure: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "SalaryStructure",
+            default: null
+        },
+
+        workingSchedule: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "WorkingSchedule",
             default: null
         },
 

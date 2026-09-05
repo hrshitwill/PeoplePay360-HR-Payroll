@@ -20,6 +20,12 @@ const salaryRuleSchema = new mongoose.Schema(
             required: true
         },
 
+        category: {
+            type: String,
+            enum: ["BASIC", "ALLOWANCE", "GROSS", "DEDUCTION", "NET"],
+            required: true
+        },
+
         type: {
             type: String,
             enum: ["EARNING", "DEDUCTION"],
@@ -28,7 +34,7 @@ const salaryRuleSchema = new mongoose.Schema(
 
         calculationType: {
             type: String,
-            enum: ["FIXED", "PERCENTAGE"],
+            enum: ["FIXED", "PERCENTAGE", "FORMULA"],
             required: true
         },
 
@@ -40,6 +46,18 @@ const salaryRuleSchema = new mongoose.Schema(
         percentage: {
             type: Number,
             default: 0
+        },
+
+        // Code reference for percentage-of calculations (e.g., "BASIC" means % of Basic)
+        percentageOf: {
+            type: String,
+            default: "BASE"
+        },
+
+        // Formula string for FORMULA type (e.g., "BASIC * 0.4")
+        formula: {
+            type: String,
+            default: ""
         },
 
         active: {

@@ -118,8 +118,12 @@ const checkOut = async (req, res) => {
         const workingHours =
             Math.round((millisecondsWorked / (1000 * 60 * 60)) * 100) / 100;
 
+        // Calculate overtime (anything over 8 hours)
+        const overtimeHours = Math.max(workingHours - 8, 0);
+
         attendance.checkOut = checkOutTime;
         attendance.workingHours = workingHours;
+        attendance.overtimeHours = Math.round(overtimeHours * 100) / 100;
 
         await attendance.save();
 
@@ -140,8 +144,18 @@ const checkOut = async (req, res) => {
 
 const getAttendances = async (req, res) => {
     try {
-        const attendances = await Attendance.find()
+        const filter = {};
+        if (req.query.employee) filter.employee = req.query.employee;
+        if (req.query.status) filter.status = req.query.status;
+        if (req.query.dateFrom || req.query.dateTo) {
+            filter.date = {};
+            if (req.query.dateFrom) filter.date.$gte = new Date(req.query.dateFrom);
+            if (req.query.dateTo) filter.date.$lte = new Date(req.query.dateTo);
+        }
+
+        const attendances = await Attendance.find(filter)
             .populate("employee")
+            .populate("correctedBy")
             .sort({ date: -1 });
 
         res.json({
@@ -180,9 +194,104 @@ const getEmployeeAttendance = async (req, res) => {
 };
 
 
+// Create attendance record manually
+const createAttendance = async (req, res) => {
+    try {
+        const attendance = await Attendance.create(req.body);
+
+        res.status(201).json({
+            success: true,
+            data: attendance
+        });
+    } catch (error) {
+        res.status(400).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+
+// Update attendance (manual correction)
+const updateAttendance = async (req, res) => {
+    try {
+        const attendance = await Attendance.findById(req.params.id);
+
+        if (!attendance) {
+            return res.status(404).json({
+                success: false,
+                message: "Attendance record not found"
+            });
+        }
+
+        // Mark as manual correction
+        const updateData = {
+            ...req.body,
+            isManualCorrection: true
+        };
+
+        // If user info available, track who corrected it
+        if (req.user) {
+            updateData.correctedBy = req.user._id;
+        }
+
+        // Recalculate working hours if checkIn and checkOut are provided
+        if (updateData.checkIn && updateData.checkOut) {
+            const checkInTime = new Date(updateData.checkIn);
+            const checkOutTime = new Date(updateData.checkOut);
+            const milliseconds = checkOutTime.getTime() - checkInTime.getTime();
+            updateData.workingHours = Math.round((milliseconds / (1000 * 60 * 60)) * 100) / 100;
+            updateData.overtimeHours = Math.max(updateData.workingHours - 8, 0);
+        }
+
+        Object.assign(attendance, updateData);
+        await attendance.save();
+
+        res.json({
+            success: true,
+            data: attendance
+        });
+    } catch (error) {
+        res.status(400).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+
+const getAttendanceById = async (req, res) => {
+    try {
+        const attendance = await Attendance.findById(req.params.id)
+            .populate("employee")
+            .populate("correctedBy");
+
+        if (!attendance) {
+            return res.status(404).json({
+                success: false,
+                message: "Attendance record not found"
+            });
+        }
+
+        res.json({
+            success: true,
+            data: attendance
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+
 module.exports = {
     checkIn,
     checkOut,
     getAttendances,
-    getEmployeeAttendance
+    getEmployeeAttendance,
+    createAttendance,
+    updateAttendance,
+    getAttendanceById
 };
