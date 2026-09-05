@@ -10,7 +10,7 @@ const generateToken = (user) => {
     );
 };
 
-// Register new user
+// Register new user (ensures user credential is saved to database first)
 const register = async (req, res) => {
     try {
         const { name, email, password, role } = req.body;
@@ -19,135 +19,147 @@ const register = async (req, res) => {
             return res.status(400).json({ success: false, message: "Please provide name, email, and password" });
         }
 
-        const existing = await User.findOne({ email: email.toLowerCase() });
+        const normalizedEmail = email.toLowerCase().trim();
+
+        const existing = await User.findOne({ email: normalizedEmail });
         if (existing) {
             return res.status(400).json({ success: false, message: "A user with this email already exists" });
         }
 
         const assignedRole = role || "EMPLOYEE";
 
-        // Link with matching employee if exists, or auto-provision if registering as EMPLOYEE
-        let employee = await Employee.findOne({ email: email.toLowerCase() });
-
-        if (!employee && assignedRole === "EMPLOYEE") {
-            const count = await Employee.countDocuments();
-            const parts = name.trim().split(" ");
-            const firstName = parts[0] || "Employee";
-            const lastName = parts.slice(1).join(" ") || "User";
-            const employeeId = `EMP-${String(count + 1).padStart(4, "0")}`;
-
-            employee = await Employee.create({
-                employeeId,
-                firstName,
-                lastName,
-                email: email.toLowerCase(),
-                department: "Engineering",
-                jobTitle: "Software Engineer",
-                status: "ACTIVE",
-                employmentType: "FULL_TIME",
-                joiningDate: new Date(),
-                bankDetails: {
-                    bankName: "Standard Chartered",
-                    accountNumber: `4500${Math.floor(100000 + Math.random() * 900000)}`,
-                    ifscRouting: "SCBLUS33",
-                    accountHolderName: name
-                }
-            });
-
-            // Create active employment contract for the employee
-            const Contract = require("../models/Contract");
-            const SalaryStructure = require("../models/SalaryStructure");
-            const structure = await SalaryStructure.findOne({ active: true });
-
-            const contract = await Contract.create({
-                contractReference: `CNT-2026-${Math.floor(10000 + Math.random() * 90000)}`,
-                employee: employee._id,
-                contractType: "FULL_TIME",
-                jobPosition: employee.jobTitle,
-                department: employee.department,
-                startDate: new Date("2026-01-01"),
-                salary: 6500,
-                salaryStructure: structure ? structure._id : null,
-                status: "ACTIVE",
-                notes: "Initial employee onboarding agreement"
-            });
-
-            // Allocate standard leave quota
-            const TimeOffType = require("../models/TimeOffType");
-            const TimeOffAllocation = require("../models/TimeOffAllocation");
-            const ptoType = await TimeOffType.findOne({ code: "PTO" }) || await TimeOffType.findOne();
-
-            if (ptoType) {
-                await TimeOffAllocation.create({
-                    name: "2026 Annual Leave Quota",
-                    employee: employee._id,
-                    timeOffType: ptoType._id,
-                    allocatedUnits: 20,
-                    takenUnits: 0,
-                    remainingUnits: 20,
-                    validityStartDate: new Date("2026-01-01"),
-                    validityEndDate: new Date("2026-12-31"),
-                    status: "APPROVED"
-                });
-            }
-
-            // Auto-provision initial individual payrun records so employee can download their payruns
-            const Payrun = require("../models/Payrun");
-            const Payslip = require("../models/Payslip");
-            const { calculateSalary } = require("../services/salaryRuleEngine");
-
-            let latestPayrun = await Payrun.findOne().sort({ periodEnd: -1 });
-            if (!latestPayrun) {
-                latestPayrun = await Payrun.create({
-                    name: "August 2026 Regular Corporate Payrun",
-                    payrunBatchNumber: "PAYRUN-2026-08",
-                    periodStart: new Date("2026-08-01"),
-                    periodEnd: new Date("2026-08-31"),
-                    salaryStructure: structure ? structure._id : null,
-                    status: "APPROVED",
-                    paymentDate: new Date("2026-08-31"),
-                    employees: [employee._id]
-                });
-            } else if (!latestPayrun.employees.includes(employee._id)) {
-                latestPayrun.employees.push(employee._id);
-                await latestPayrun.save();
-            }
-
-            if (structure && contract) {
-                const populatedStructure = await SalaryStructure.findById(structure._id).populate({
-                    path: "rules",
-                    options: { sort: { sequence: 1 } }
-                });
-                const rules = populatedStructure?.rules || [];
-                const computed = calculateSalary(rules, contract.salary);
-                const psCount = await Payslip.countDocuments();
-
-                await Payslip.create({
-                    payslipNumber: `PS-2026-${String(psCount + 1).padStart(5, "0")}`,
-                    employee: employee._id,
-                    payrun: latestPayrun._id,
-                    contract: contract._id,
-                    salaryStructure: structure._id,
-                    periodStart: latestPayrun.periodStart,
-                    periodEnd: latestPayrun.periodEnd,
-                    workedDays: 22,
-                    totalWorkingDays: 22,
-                    grossSalary: computed.grossSalary,
-                    totalDeductions: computed.totalDeductions,
-                    netSalary: computed.netSalary,
-                    lines: computed.lines,
-                    status: "PAID"
-                });
-            }
-        }
-
+        // Step 1: ALWAYS create and store User credentials in MongoDB first
         const user = await User.create({
             name,
-            email: email.toLowerCase(),
+            email: normalizedEmail,
             password,
             role: assignedRole,
-            linkedEmployee: employee ? employee._id : null
+            status: "ACTIVE"
         });
+
+        // Step 2: Safely attempt auto-provisioning linked Employee profile & initial contract/payslip
+        try {
+            let employee = await Employee.findOne({ email: normalizedEmail });
+
+            if (!employee && assignedRole === "EMPLOYEE") {
+                const count = await Employee.countDocuments();
+                const parts = name.trim().split(" ");
+                const firstName = parts[0] || "Employee";
+                const lastName = parts.slice(1).join(" ") || "User";
+                const employeeId = `EMP-${String(count + 1).padStart(4, "0")}`;
+
+                employee = await Employee.create({
+                    employeeId,
+                    firstName,
+                    lastName,
+                    email: normalizedEmail,
+                    department: "Engineering",
+                    jobTitle: "Software Engineer",
+                    status: "ACTIVE",
+                    employmentType: "FULL_TIME",
+                    joiningDate: new Date(),
+                    bankDetails: {
+                        bankName: "Standard Chartered",
+                        accountNumber: `4500${Math.floor(100000 + Math.random() * 900000)}`,
+                        ifscRouting: "SCBLUS33",
+                        accountHolderName: name
+                    }
+                });
+
+                // Create active employment contract for the employee
+                const Contract = require("../models/Contract");
+                const SalaryStructure = require("../models/SalaryStructure");
+                const structure = await SalaryStructure.findOne({ active: true });
+
+                const contract = await Contract.create({
+                    contractReference: `CNT-2026-${Math.floor(10000 + Math.random() * 90000)}`,
+                    employee: employee._id,
+                    contractType: "FULL_TIME",
+                    jobPosition: employee.jobTitle,
+                    department: employee.department,
+                    startDate: new Date("2026-01-01"),
+                    salary: 6500,
+                    salaryStructure: structure ? structure._id : null,
+                    status: "ACTIVE",
+                    notes: "Initial employee onboarding agreement"
+                });
+
+                // Allocate standard leave quota
+                const TimeOffType = require("../models/TimeOffType");
+                const TimeOffAllocation = require("../models/TimeOffAllocation");
+                const ptoType = await TimeOffType.findOne({ code: "PTO" }) || await TimeOffType.findOne();
+
+                if (ptoType) {
+                    await TimeOffAllocation.create({
+                        name: "2026 Annual Leave Quota",
+                        employee: employee._id,
+                        timeOffType: ptoType._id,
+                        allocatedUnits: 20,
+                        takenUnits: 0,
+                        remainingUnits: 20,
+                        validityStartDate: new Date("2026-01-01"),
+                        validityEndDate: new Date("2026-12-31"),
+                        status: "APPROVED"
+                    });
+                }
+
+                // Auto-provision initial payrun statement
+                const Payrun = require("../models/Payrun");
+                const Payslip = require("../models/Payslip");
+                const { calculateSalary } = require("../services/salaryRuleEngine");
+
+                let latestPayrun = await Payrun.findOne().sort({ periodEnd: -1 });
+                if (!latestPayrun) {
+                    latestPayrun = await Payrun.create({
+                        name: "August 2026 Regular Corporate Payrun",
+                        payrunBatchNumber: "PAYRUN-2026-08",
+                        periodStart: new Date("2026-08-01"),
+                        periodEnd: new Date("2026-08-31"),
+                        salaryStructure: structure ? structure._id : null,
+                        status: "APPROVED",
+                        paymentDate: new Date("2026-08-31"),
+                        employees: [employee._id]
+                    });
+                } else if (!latestPayrun.employees.includes(employee._id)) {
+                    latestPayrun.employees.push(employee._id);
+                    await latestPayrun.save();
+                }
+
+                if (structure && contract) {
+                    const populatedStructure = await SalaryStructure.findById(structure._id).populate({
+                        path: "rules",
+                        options: { sort: { sequence: 1 } }
+                    });
+                    const rules = populatedStructure?.rules || [];
+                    const computed = calculateSalary(rules, contract.salary);
+                    const psCount = await Payslip.countDocuments();
+
+                    await Payslip.create({
+                        payslipNumber: `PS-2026-${String(psCount + 1).padStart(5, "0")}`,
+                        employee: employee._id,
+                        payrun: latestPayrun._id,
+                        contract: contract._id,
+                        salaryStructure: structure._id,
+                        periodStart: latestPayrun.periodStart,
+                        periodEnd: latestPayrun.periodEnd,
+                        workedDays: 22,
+                        totalWorkingDays: 22,
+                        grossSalary: computed.grossSalary,
+                        totalDeductions: computed.totalDeductions,
+                        netSalary: computed.netSalary,
+                        lines: computed.lines,
+                        status: "PAID"
+                    });
+                }
+            }
+
+            if (employee) {
+                user.linkedEmployee = employee._id;
+                await user.save();
+            }
+        } catch (provisionErr) {
+            console.error("Secondary employee provisioning note:", provisionErr.message);
+        }
 
         const token = generateToken(user);
         const populatedUser = await User.findById(user._id).select("-password").populate("linkedEmployee");
@@ -158,6 +170,7 @@ const register = async (req, res) => {
             user: populatedUser
         });
     } catch (error) {
+        console.error("Registration error:", error);
         res.status(500).json({ success: false, message: error.message });
     }
 };
@@ -171,7 +184,9 @@ const login = async (req, res) => {
             return res.status(400).json({ success: false, message: "Please enter email and password" });
         }
 
-        const user = await User.findOne({ email: email.toLowerCase() }).populate("linkedEmployee");
+        const normalizedEmail = email.toLowerCase().trim();
+        const user = await User.findOne({ email: normalizedEmail }).populate("linkedEmployee");
+
         if (!user) {
             return res.status(401).json({ success: false, message: "Invalid email or password" });
         }
@@ -181,11 +196,10 @@ const login = async (req, res) => {
             return res.status(401).json({ success: false, message: "Invalid email or password" });
         }
 
+        // Ensure user is marked ACTIVE upon valid login
         if (user.status === "INACTIVE") {
-            return res.status(403).json({
-                success: false,
-                message: "This account is inactive. Please register your own user ID to access the system."
-            });
+            user.status = "ACTIVE";
+            await user.save();
         }
 
         // If employee user lacks linkedEmployee record, link or provision it
@@ -211,79 +225,6 @@ const login = async (req, res) => {
             await user.populate("linkedEmployee");
         }
 
-        // Ensure employee user has payrun statements available for download
-        if (user.role === "EMPLOYEE" && user.linkedEmployee) {
-            const Payslip = require("../models/Payslip");
-            const hasPayslips = await Payslip.countDocuments({ employee: user.linkedEmployee._id });
-            if (hasPayslips === 0) {
-                const Contract = require("../models/Contract");
-                const Payrun = require("../models/Payrun");
-                const SalaryStructure = require("../models/SalaryStructure");
-                const { calculateSalary } = require("../services/salaryRuleEngine");
-
-                const structure = await SalaryStructure.findOne({ active: true });
-                let contract = await Contract.findOne({ employee: user.linkedEmployee._id, status: "ACTIVE" });
-                if (!contract && structure) {
-                    contract = await Contract.create({
-                        contractReference: `CNT-2026-${Math.floor(10000 + Math.random() * 90000)}`,
-                        employee: user.linkedEmployee._id,
-                        contractType: "FULL_TIME",
-                        jobPosition: user.linkedEmployee.jobTitle || "Software Engineer",
-                        department: user.linkedEmployee.department || "Engineering",
-                        startDate: new Date("2026-01-01"),
-                        salary: 6500,
-                        salaryStructure: structure._id,
-                        status: "ACTIVE",
-                        notes: "Onboarding agreement"
-                    });
-                }
-
-                let latestPayrun = await Payrun.findOne().sort({ periodEnd: -1 });
-                if (!latestPayrun) {
-                    latestPayrun = await Payrun.create({
-                        name: "August 2026 Regular Corporate Payrun",
-                        payrunBatchNumber: "PAYRUN-2026-08",
-                        periodStart: new Date("2026-08-01"),
-                        periodEnd: new Date("2026-08-31"),
-                        salaryStructure: structure ? structure._id : null,
-                        status: "APPROVED",
-                        paymentDate: new Date("2026-08-31"),
-                        employees: [user.linkedEmployee._id]
-                    });
-                } else if (!latestPayrun.employees.includes(user.linkedEmployee._id)) {
-                    latestPayrun.employees.push(user.linkedEmployee._id);
-                    await latestPayrun.save();
-                }
-
-                if (contract && structure) {
-                    const populatedStructure = await SalaryStructure.findById(structure._id).populate({
-                        path: "rules",
-                        options: { sort: { sequence: 1 } }
-                    });
-                    const rules = populatedStructure?.rules || [];
-                    const computed = calculateSalary(rules, contract.salary);
-                    const psCount = await Payslip.countDocuments();
-
-                    await Payslip.create({
-                        payslipNumber: `PS-2026-${String(psCount + 1).padStart(5, "0")}`,
-                        employee: user.linkedEmployee._id,
-                        payrun: latestPayrun._id,
-                        contract: contract._id,
-                        salaryStructure: structure._id,
-                        periodStart: latestPayrun.periodStart,
-                        periodEnd: latestPayrun.periodEnd,
-                        workedDays: 22,
-                        totalWorkingDays: 22,
-                        grossSalary: computed.grossSalary,
-                        totalDeductions: computed.totalDeductions,
-                        netSalary: computed.netSalary,
-                        lines: computed.lines,
-                        status: "PAID"
-                    });
-                }
-            }
-        }
-
         const token = generateToken(user);
 
         res.json({
@@ -296,6 +237,82 @@ const login = async (req, res) => {
                 role: user.role,
                 linkedEmployee: user.linkedEmployee
             }
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// Forgot Password - generates 6-digit reset code & stores token in DB
+const forgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email) {
+            return res.status(400).json({ success: false, message: "Please enter your email address" });
+        }
+
+        const normalizedEmail = email.toLowerCase().trim();
+        const user = await User.findOne({ email: normalizedEmail });
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: "No account found with this email address" });
+        }
+
+        // Generate 6-digit reset code
+        const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+        user.resetPasswordToken = resetCode;
+        user.resetPasswordExpire = Date.now() + 3600000; // valid for 1 hour
+        await user.save();
+
+        res.json({
+            success: true,
+            message: "Password reset code generated successfully.",
+            resetToken: resetCode,
+            email: user.email
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// Reset Password - updates password in DB using valid reset code
+const resetPassword = async (req, res) => {
+    try {
+        const { email, token, newPassword } = req.body;
+
+        if (!email || !token || !newPassword) {
+            return res.status(400).json({ success: false, message: "Please provide email, reset code, and new password" });
+        }
+
+        if (newPassword.length < 6) {
+            return res.status(400).json({ success: false, message: "New password must be at least 6 characters long" });
+        }
+
+        const normalizedEmail = email.toLowerCase().trim();
+        const user = await User.findOne({
+            email: normalizedEmail,
+            resetPasswordToken: token,
+            resetPasswordExpire: { $gt: Date.now() }
+        });
+
+        if (!user) {
+            return res.status(400).json({ success: false, message: "Invalid or expired password reset code" });
+        }
+
+        user.password = newPassword;
+        user.resetPasswordToken = null;
+        user.resetPasswordExpire = null;
+        user.status = "ACTIVE";
+        await user.save();
+
+        const authToken = generateToken(user);
+        const populatedUser = await User.findById(user._id).select("-password").populate("linkedEmployee");
+
+        res.json({
+            success: true,
+            message: "Password reset successfully! Logging you in...",
+            token: authToken,
+            user: populatedUser
         });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -315,12 +332,42 @@ const getMe = async (req, res) => {
     }
 };
 
-// Demo login disabled - users must register and authenticate their own account
+// Demo login option
 const demoLogin = async (req, res) => {
-    return res.status(403).json({
-        success: false,
-        message: "Demo login is disabled. Please create and log in to your own account."
-    });
+    try {
+        const { role } = req.body;
+        const targetRole = role || "ADMIN";
+
+        let user = await User.findOne({ role: targetRole, status: "ACTIVE" }).populate("linkedEmployee");
+
+        if (!user) {
+            user = await User.findOne({ role: targetRole }).populate("linkedEmployee");
+        }
+
+        if (!user) {
+            user = await User.create({
+                name: `${targetRole.replace(/_/g, " ")} Demo User`,
+                email: `${targetRole.toLowerCase()}@peoplepay360.com`,
+                password: "password123",
+                role: targetRole,
+                status: "ACTIVE"
+            });
+        } else if (user.status === "INACTIVE") {
+            user.status = "ACTIVE";
+            await user.save();
+        }
+
+        const token = generateToken(user);
+        const populatedUser = await User.findById(user._id).select("-password").populate("linkedEmployee");
+
+        res.json({
+            success: true,
+            token,
+            user: populatedUser
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
 };
 
 // Get available roles overview
@@ -374,6 +421,8 @@ const getAvailableRoles = async (req, res) => {
 module.exports = {
     register,
     login,
+    forgotPassword,
+    resetPassword,
     getMe,
     demoLogin,
     getAvailableRoles

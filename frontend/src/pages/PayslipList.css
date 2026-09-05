@@ -1,0 +1,186 @@
+.payslips-container {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.payslips-header h1 {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.payslips-header p {
+  color: var(--text-secondary);
+  margin: 4px 0 0 0;
+}
+
+.payslips-layout {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 20px;
+}
+
+.payslips-list-card, .payslip-detail-card {
+  background: var(--bg-card, #18181b);
+  border: 1px solid var(--border-color, #27272a);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.payslips-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.payslips-table th, .payslips-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color, #27272a);
+}
+
+.emp-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.emp-info span {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.text-green { color: #10b981; }
+.text-red { color: #ef4444; }
+.text-highlight { color: #818cf8; }
+
+.action-btns {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-icon {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color, #27272a);
+  color: var(--text-primary);
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btn-icon.pdf {
+  color: #818cf8;
+}
+
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.detail-header h2 {
+  font-size: 16px;
+  margin: 0;
+}
+
+.btn-ai-explain {
+  background: rgba(99, 102, 241, 0.2);
+  border: 1px solid #6366f1;
+  color: #818cf8;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.salary-summary-pills {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.pill {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 12px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pill.highlight {
+  border: 1px solid #6366f1;
+}
+
+.pill span {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.pill strong {
+  font-size: 16px;
+}
+
+.ai-explanation-box {
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  padding: 16px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+.explanation-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.explanation-title h3 {
+  font-size: 14px;
+  margin: 0;
+  color: #818cf8;
+}
+
+.explanation-text {
+  white-space: pre-wrap;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.breakdown-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.breakdown-col h4 {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.breakdown-col ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.breakdown-col li {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  padding: 6px 0;
+  border-bottom: 1px dashed var(--border-color, #27272a);
+}

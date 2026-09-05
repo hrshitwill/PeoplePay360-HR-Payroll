@@ -68,6 +68,20 @@ export const api = {
       body: JSON.stringify({ email, password })
     }).then(handleResponse),
 
+  forgotPassword: (email) =>
+    fetch(`${API_BASE}/auth/forgot-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email })
+    }).then(handleResponse),
+
+  resetPassword: (email, token, newPassword) =>
+    fetch(`${API_BASE}/auth/reset-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, token, newPassword })
+    }).then(handleResponse),
+
   demoLogin: (role) =>
     fetch(`${API_BASE}/auth/demo-login`, {
       method: "POST",

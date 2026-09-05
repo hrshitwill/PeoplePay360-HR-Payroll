@@ -42,7 +42,6 @@ export const Sidebar = ({
         { id: "employees", label: "Employees", icon: Users },
         ...(canAccessFullHR ? [{ id: "contracts", label: "Contracts", icon: FileText }] : []),
         { id: "attendance", label: "Attendance", icon: Clock },
-        { id: "timeoff", label: "Time Off", icon: Calendar },
         ...(canAccessPayroll ? [{ id: "payroll", label: "Payroll", icon: DollarSign }] : []),
         ...(canAccessPayroll ? [{ id: "payslips", label: "Payslips", icon: FileSpreadsheet }] : []),
         { id: "reports", label: "Reports", icon: BarChart3 }
