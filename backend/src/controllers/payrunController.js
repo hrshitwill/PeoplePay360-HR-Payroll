@@ -2,6 +2,7 @@ const Payrun = require("../models/Payrun");
 const Payslip = require("../models/Payslip");
 const Employee = require("../models/Employee");
 const SalaryStructure = require("../models/SalaryStructure");
+const Contract = require("../models/Contract");
 const { findApplicableContract } = require("../services/contractService");
 const { calculateSalary } = require("../services/salaryRuleEngine");
 const { validateEmployeePayslip } = require("../services/warningsService");
@@ -27,15 +28,27 @@ const getEligibleEmployees = async (req, res) => {
             .populate("workingSchedule", "name totalWeeklyHours")
             .sort({ firstName: 1 });
 
-        const eligible = [];
+        const empIds = employees.map((e) => e._id);
 
-        for (const emp of employees) {
-            const contract = await findApplicableContract(emp._id, pStart, pEnd);
+        // Batch query active contracts overlapping the period
+        const contracts = await Contract.find({
+            employee: { $in: empIds },
+            status: "ACTIVE",
+            startDate: { $lte: pEnd },
+            $or: [{ endDate: null }, { endDate: { $gte: pStart } }]
+        }).populate("salaryStructure", "name code");
 
-            // If structure is specified, optionally filter or check match
+        const contractMap = new Map();
+        contracts.forEach((c) => {
+            contractMap.set(c.employee.toString(), c);
+        });
+
+        const eligible = employees.map((emp) => {
+            const contract = contractMap.get(emp._id.toString()) || null;
             let matchesStructure = true;
             if (salaryStructureId && contract?.salaryStructure) {
-                matchesStructure = contract.salaryStructure._id.toString() === salaryStructureId.toString();
+                const sId = contract.salaryStructure._id ? contract.salaryStructure._id.toString() : contract.salaryStructure.toString();
+                matchesStructure = sId === salaryStructureId.toString();
             }
 
             const bankComplete = Boolean(
@@ -44,15 +57,15 @@ const getEligibleEmployees = async (req, res) => {
                 emp.bankDetails?.ifscRouting
             );
 
-            eligible.push({
+            return {
                 employee: emp,
                 hasActiveContract: Boolean(contract),
-                contract: contract || null,
+                contract,
                 matchesStructure,
                 bankComplete,
                 isEligible: Boolean(contract)
-            });
-        }
+            };
+        });
 
         res.json({
             success: true,
