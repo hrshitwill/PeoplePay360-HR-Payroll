@@ -7,26 +7,23 @@ const salaryStructureSchema = new mongoose.Schema(
             required: true,
             trim: true
         },
-
         code: {
             type: String,
             required: true,
             unique: true,
+            uppercase: true,
             trim: true
         },
-
         description: {
             type: String,
             default: ""
         },
-
         rules: [
             {
                 type: mongoose.Schema.Types.ObjectId,
                 ref: "SalaryRule"
             }
         ],
-
         active: {
             type: Boolean,
             default: true
@@ -37,7 +34,4 @@ const salaryStructureSchema = new mongoose.Schema(
     }
 );
 
-module.exports = mongoose.model(
-    "SalaryStructure",
-    salaryStructureSchema
-);
+module.exports = mongoose.model("SalaryStructure", salaryStructureSchema);
