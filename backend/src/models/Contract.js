@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-
+require("./SalaryStructure");
 const contractSchema = new mongoose.Schema(
     {
         employee: {
