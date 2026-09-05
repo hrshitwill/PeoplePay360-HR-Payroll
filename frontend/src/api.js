@@ -16,7 +16,17 @@ const authHeaders = () => {
 };
 
 const handleResponse = async (res) => {
-  const data = await res.json();
+  const text = await res.text();
+  let data;
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch (err) {
+    throw new Error(
+      res.ok
+        ? "Invalid JSON received from server"
+        : `Backend connectivity issue (${res.status}). Ensure the backend server is running on port 3000.`
+    );
+  }
   if (!res.ok) {
     throw new Error(data.message || `HTTP Error ${res.status}`);
   }

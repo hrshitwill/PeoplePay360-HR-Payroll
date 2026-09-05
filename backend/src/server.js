@@ -50,8 +50,25 @@ app.get("/api/health", (req, res) => {
     });
 });
 
-const PORT = process.env.PORT || 5000;
+// Error handling middleware
+app.use((err, req, res, next) => {
+    console.error("Internal Server Error:", err.stack);
+    res.status(500).json({
+        success: false,
+        message: err.message || "Internal Server Error"
+    });
+});
 
-app.listen(PORT, () => {
-    console.log(`PeoplePay360 backend running on port ${PORT}`);
+process.on("uncaughtException", (err) => {
+    console.error("Uncaught Exception:", err);
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+    console.error("Unhandled Rejection at:", promise, "reason:", reason);
+});
+
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, "0.0.0.0", () => {
+    console.log(`PeoplePay360 backend running on port ${PORT} (0.0.0.0)`);
 });
