@@ -9,7 +9,7 @@ import { PayrollModule } from "./components/PayrollModule";
 import { WorkingScheduleModule } from "./components/WorkingScheduleModule";
 import { AuthModal } from "./components/AuthModal";
 import { api } from "./api";
-import { Info, CheckCircle, Shield, Lock } from "lucide-react";
+import { CheckCircle } from "lucide-react";
 
 function App() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -121,14 +121,6 @@ function App() {
     }
   };
 
-  const roleDescriptions = {
-    ADMIN: "Full platform control across all HR and Payroll operations and configurations.",
-    HR_MANAGER: "Full CRUD access to Employees, Contracts, Schedules, Attendance, and Time Off. Payroll features restricted.",
-    HR_PAYROLL_USER: "HR Manager access + Payrun and Payslip processing. Read-only on Salary Structures.",
-    HR_PAYROLL_MANAGER: "Full control over HR, Payruns, Payslips, Salary Structures, and Sequencing Rules.",
-    EMPLOYEE: "Employee self-service: View personal details, clock in/out, view leave balances and submit requests."
-  };
-
   return (
     <div className="app-container">
       {/* Top Navigation */}
@@ -146,33 +138,6 @@ function App() {
         onOpenAuth={() => setIsAuthOpen(true)}
         onSignOut={handleSignOut}
       />
-
-      {/* Role Banner / Active Context */}
-      <div style={{ background: "#ffffff", borderBottom: "1px solid #e2e8f0", padding: "8px 24px" }}>
-        <div style={{ maxWidth: 1400, margin: "0 auto", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 10, fontSize: 12.5, color: "#64748b" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <Shield size={14} color="#4f46e5" />
-            <span>Active Role: <strong style={{ color: "#0f172a" }}>{currentRole.replace("_", " ")}</strong></span>
-            <span>—</span>
-            <span>{roleDescriptions[currentRole]}</span>
-          </div>
-
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            {currentUser && (
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <Lock size={12} color="#10b981" />
-                <span style={{ color: "#065f46", fontWeight: 600 }}>
-                  JWT Authenticated: {currentUser.email}
-                </span>
-              </div>
-            )}
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#10b981", display: "inline-block" }} />
-              <span style={{ color: "#059669", fontWeight: 600 }}>MongoDB Connected • Live Operations</span>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Toast Notification */}
       {notification && (
